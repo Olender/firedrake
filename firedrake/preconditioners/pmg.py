@@ -499,15 +499,16 @@ def prolongation_transfer_kernel_action(Vf, expr):
     from tsfc import compile_expression_dual_evaluation
     from tsfc.finatinterface import create_element
     to_element = create_element(Vf.ufl_element())
-    kernel = compile_expression_dual_evaluation(expr, to_element, Vf.ufl_element())
+    kernel = compile_expression_dual_evaluation(expr, to_element, Vf.ufl_element(), log=PETSc.Log.isActive())
     coefficients = kernel.coefficients
     if kernel.first_coefficient_fake_coords:
         target_mesh = Vf.ufl_domain()
         coefficients[0] = target_mesh.coordinates
 
     return op2.Kernel(kernel.ast, kernel.name,
-                      requires_zeroed_output_arguments=True,
-                      flop_count=kernel.flop_count), coefficients
+                    requires_zeroed_output_arguments=True,
+                    flop_count=kernel.flop_count,
+                    events=(kernel.event,)), coefficients
 
 
 @lru_cache(maxsize=10)
