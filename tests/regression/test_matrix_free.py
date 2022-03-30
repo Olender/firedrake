@@ -308,3 +308,34 @@ def test_duplicate(a, bcs):
         B_petsc.mult(x, y)
     # Check if original rhs is equal to BA^-1 (rhs)
     assert np.allclose(rhs.vector().array(), solution2.vector().array())
+
+
+def test_matrix_free_fieldsplit_with_real():
+    mesh = RectangleMesh(10, 10, 1, 1)
+
+    U = VectorFunctionSpace(mesh, 'CG', 2)
+    Q = FunctionSpace(mesh, 'CG', 1)
+    R = FunctionSpace(mesh, 'R', 0)
+    V = MixedFunctionSpace([U, Q, R])
+
+    eps = 1e-8
+
+    w_, p_, l_water_ = TrialFunctions(V)
+    v_, q_, m_water_ = TestFunctions(V)
+
+    f = as_vector([0, -9.8])
+
+    A = 2 * inner(sym(grad(w_)), sym(grad(v_))) * dx \
+        - inner(p_, div(v_)) * dx \
+        + inner(div(w_), q_) * dx \
+        + eps * inner(p_, q_) * dx
+    A += inner(dot(w_, f), m_water_) * dx - inner(l_water_, v_[1]) * dx
+    L = inner(f, v_) * dx(domain=mesh)
+
+    u_bdy = Function(U)
+    bc = DirichletBC(V.sub(0), u_bdy, 'on_boundary')
+
+    sol = Function(V)
+    stokes_problem = LinearVariationalProblem(A, L, sol, bcs=bc)
+    stokes_solver = LinearVariationalSolver(stokes_problem)
+    stokes_solver.solve()
