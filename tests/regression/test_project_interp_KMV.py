@@ -22,7 +22,7 @@ def mesh(mesh_type):
 
 @pytest.fixture
 def max_degree(mesh_type):
-    return {"square": 6, "cube": 4}[mesh_type]
+    return {"square": 6, "cube": 5}[mesh_type]
 
 
 @pytest.fixture
